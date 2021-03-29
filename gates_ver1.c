@@ -30,8 +30,9 @@
 /* User read-write, group read, others read */
 #define PERMS 0644
 
-int j = 0, whoami = 0, w = 0;
+int j = 0, w = 0;
 pid_t pidtable[100];
+char buffer[100];
 
 void forker(int nprocesses) {
     pid_t pid;
@@ -42,12 +43,17 @@ void forker(int nprocesses) {
         }
         else if (pid == 0) {
             //Child stuff here
-            printf("Child %d with pid = %d end\n", whoami, pidtable[w] = getpid());
+            if(buffer[w] == 't') {
+                printf("Child %d with pid = %d with gates OPEN\n", w, pidtable[w] = getpid());
+            }
+            else {
+                printf("Child %d with pid = %d with gates CLOSED\n", w, pidtable[w] = getpid());
+                printf("My buffer is %d\n", buffer[w]);
+            }
         }
         else if(pid > 0) {
             //parent
             w++;
-            whoami++;
             sleep(1);
             forker(nprocesses - 1);
         }
@@ -59,7 +65,7 @@ int main(int argc, char *argv[]) {
         perror("too many arguments");
         exit(-1);
     }
-    char buffer[strlen(argv[1])];
+    buffer[strlen(argv[1])];
     j = snprintf(buffer, strlen(argv[1])+1, "%s\n", argv[1]);
     //printf("%s\ncount = %d\n", buffer, j-1);                                                                        //prints argv string & number of children                                                      
     for (int i = 0; buffer[i] != '\0'; i++) {
