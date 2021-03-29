@@ -30,19 +30,46 @@
 /* User read-write, group read, others read */
 #define PERMS 0644
 
+int j = 0, whoami = 0, w = 0;
+pid_t pidtable[100];
+
+void forker(int nprocesses) {
+    pid_t pid;
+    
+    if(nprocesses > 0) {
+        if ((pid = fork()) < 0) {
+            perror("fork");
+        }
+        else if (pid == 0) {
+            //Child stuff here
+            printf("Child %d with pid = %d end\n", whoami, pidtable[w] = getpid());
+        }
+        else if(pid > 0) {
+            //parent
+            w++;
+            whoami++;
+            sleep(1);
+            forker(nprocesses - 1);
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         perror("too many arguments");
         exit(-1);
     }
     char buffer[strlen(argv[1])];
-    int j = snprintf(buffer, strlen(argv[1])+1, "%s\n", argv[1]);
-    printf("%s\ncount = %d\n", buffer, j-1);
+    j = snprintf(buffer, strlen(argv[1])+1, "%s\n", argv[1]);
+    //printf("%s\ncount = %d\n", buffer, j-1);                                                                        //prints argv string & number of children                                                      
     for (int i = 0; buffer[i] != '\0'; i++) {
         if ((buffer[i] == 't' || buffer[i] != 'f') && (buffer[i] != 't' || buffer[i] == 'f')) {
             perror("wrong arguments");
             exit(-1);
         }
     }
+    printf("I will create %d children\n", j-1);
+    forker(j-1);
+    printf("w = %d, pid = %d\n", w, pidtable[w]);
     return 0;
 }
