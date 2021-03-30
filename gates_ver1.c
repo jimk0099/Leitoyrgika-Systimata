@@ -8,10 +8,11 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <sys/times.h>
+#include <stdbool.h>
 
 #define DEFAULT "\033[30;1m"
 #define RED "\033[31;1m"
-#define GREEN "\033[32m"
+#define GREEN "\033[32;1m"
 #define YELLOW "\033[33m"
 #define BLUE "\033[34m"
 #define MAGENTA "\033[35m"
@@ -33,6 +34,7 @@
 int j = 0, w = 0;
 pid_t pidtable[100];
 char buffer[100];
+bool gate_state[100];
 
 void forker(int nprocesses) {
     pid_t pid;
@@ -44,17 +46,22 @@ void forker(int nprocesses) {
         else if (pid == 0) {
             //Child stuff here
             if(buffer[w] == 't') {
-                printf("Child %d with pid = %d with gates OPEN\n", w, pidtable[w] = getpid());
+                pidtable[w] = getpid();
+                gate_state[w] = true;
+                printf(GREEN "ID=%d/PID=%d/TIME=...] The gates are open!\n", w, pidtable[w]);
             }
             else {
-                printf("Child %d with pid = %d with gates CLOSED\n", w, pidtable[w] = getpid());
-                printf("My buffer is %d\n", buffer[w]);
+                pidtable[w] = getpid();
+                gate_state[w] = false;
+                printf(RED "ID=%d/PID=%d/TIME=...] The gates are closed!\n", w, pidtable[w]);
+                //printf("My buffer is %d\n", buffer[w]);
             }
         }
         else if(pid > 0) {
             //parent
             w++;
             sleep(1);
+            //printf("[PARENT/PID=%d] Created child %d (PID=%d) and initial state %d\n", getpid(), w, pidtable[w], gate_state[w]);
             forker(nprocesses - 1);
         }
     }
@@ -74,8 +81,8 @@ int main(int argc, char *argv[]) {
             exit(-1);
         }
     }
-    printf("I will create %d children\n", j-1);
+    //printf("I will create %d children\n", j-1);
     forker(j-1);
-    printf("w = %d, pid = %d\n", w, pidtable[w]);
+    //printf("w = %d, pid = %d\n", w, pidtable[w]);
     return 0;
 }
