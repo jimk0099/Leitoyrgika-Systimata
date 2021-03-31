@@ -19,3 +19,8 @@ parent.c
 child.c
 gate_ver1
 gates_ver1
+clock_example
+child
+clock_example
+clock_example.c
+parent

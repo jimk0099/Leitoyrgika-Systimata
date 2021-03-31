@@ -15,7 +15,7 @@
 #define GREEN "\033[32;1m"
 #define YELLOW "\033[33m"
 #define BLUE "\033[34m"
-#define MAGENTA "\033[35m"
+#define MAGENTA "\033[35;1m"
 #define CYAN "\033[36m"
 #define WHITE "\033[37m"
 #define GRAY "\033[38;1m"
@@ -42,27 +42,34 @@ void forker(int nprocesses) {
     if(nprocesses > 0) {
         if ((pid = fork()) < 0) {
             perror("fork");
+            exit(-1);
         }
         else if (pid == 0) {
             //Child stuff here
+            pidtable[w] = getpid();
             if(buffer[w] == 't') {
-                pidtable[w] = getpid();
                 gate_state[w] = true;
-                printf(GREEN "ID=%d/PID=%d/TIME=...] The gates are open!\n", w, pidtable[w]);
+                sleep(2);
+                printf(GREEN "[ID=%d/PID=%d/TIME=...] The gates are open!\n", w, pidtable[w]);
             }
             else {
-                pidtable[w] = getpid();
                 gate_state[w] = false;
-                printf(RED "ID=%d/PID=%d/TIME=...] The gates are closed!\n", w, pidtable[w]);
+                sleep(2);
+                printf(RED "[ID=%d/PID=%d/TIME=...] The gates are closed!\n", w, pidtable[w]);
                 //printf("My buffer is %d\n", buffer[w]);
             }
         }
         else if(pid > 0) {
             //parent
-            w++;
             sleep(1);
-            //printf("[PARENT/PID=%d] Created child %d (PID=%d) and initial state %d\n", getpid(), w, pidtable[w], gate_state[w]);
+            kill(pid, SIGSTOP);
+            printf(MAGENTA "[PARENT/PID=%d] Created child %d (PID=%d) and initial state %d\n", getpid(), w, pidtable[w], gate_state[w]);
+            w++;
             forker(nprocesses - 1);
+            for(int z = 0; z < w; z++) {
+                kill(pidtable[z], SIGCONT);
+                sleep(1);
+            }
         }
     }
 }
