@@ -15,7 +15,7 @@
 #define GREEN "\033[32;1m"
 #define YELLOW "\033[33m"
 #define BLUE "\033[34m"
-#define MAGENTA "\033[35;1m"
+#define MAGENTA "\033[35m"
 #define CYAN "\033[36m"
 #define WHITE "\033[37m"
 #define GRAY "\033[38;1m"
@@ -36,6 +36,35 @@ pid_t pidtable[100];
 char buffer[100];
 bool gate_state[100];
 
+void check_neg(int ret, const char *msg) {
+  if (ret < 0) {
+    perror(msg);
+    exit(EXIT_FAILURE);
+  }
+}
+
+void describe_wait_status(pid_t pid, int status) {
+  if (pid < 1) {
+    perror("wait() call failed");
+  }
+
+  if (pid == 0) {
+    printf("Nothing happened");
+  }
+
+  if (WIFSTOPPED(status)) {
+    printf("Child with PID %d stopped\n", pid);
+  } else if (WIFCONTINUED(status)) {
+    printf("Child with PID %d continued\n", pid);
+  } else if (WIFEXITED(status)) {
+    printf("Child with PID %d exited with status code %d\n", pid,
+           WEXITSTATUS(status));
+  } else if (WIFSIGNALED(status)) {
+    printf("Child with PID %d terminated by signal %d with status code %d\n",
+           pid, WSTOPSIG(status), WEXITSTATUS(status));
+  }
+}
+
 void forker(int nprocesses) {
     pid_t pid;
     
@@ -46,37 +75,51 @@ void forker(int nprocesses) {
         }
         else if (pid == 0) {
             //Child stuff here
-            pidtable[w] = getpid();
+            char str[3];
+            sprintf(str, "%d", w);
             if(buffer[w] == 't') {
-                gate_state[w] = true;
-                sleep(2);
-                printf(GREEN "[ID=%d/PID=%d/TIME=...] The gates are open!\n", w, pidtable[w]);
+                char *const argv[] = {"./child", str, "t", NULL};
+                int status = execv("./child", argv);
+                check_neg(status, "Failed to create child");
             }
             else {
-                gate_state[w] = false;
-                sleep(2);
-                printf(RED "[ID=%d/PID=%d/TIME=...] The gates are closed!\n", w, pidtable[w]);
-                //printf("My buffer is %d\n", buffer[w]);
+                char *const argv[] = {"./child", str, "f", NULL};
+                int status = execv("./child", argv);
+                check_neg(status, "Failed to create child");
             }
         }
-        else if(pid > 0) {
-            //parent
+        else if (pid > 0) {
+            //Parent Code
+            pidtable[w] = pid;
+
+            if (buffer[w] == 't') {
+              gate_state[w] = true;
+            }
+            else {
+              gate_state[w] = false;
+            }
+
             sleep(1);
-            kill(pid, SIGSTOP);
-            printf(MAGENTA "[PARENT/PID=%d] Created child %d (PID=%d) and initial state %d\n", getpid(), w, pidtable[w], gate_state[w]);
+
+            if (gate_state[w]) {
+              printf(MAGENTA "[PARENT/PID=%d] Created child %d (PID=%d) and initial state 't'\n", getpid(), w, pidtable[w]);
+            }
+            else {
+            printf(MAGENTA "[PARENT/PID=%d] Created child %d (PID=%d) and initial state 'f'\n", getpid(), w, pidtable[w]);
+            }
+
             w++;
             forker(nprocesses - 1);
-            for(int z = 0; z < w; z++) {
-                kill(pidtable[z], SIGCONT);
-                sleep(1);
-            }
         }
     }
 }
 
 int main(int argc, char *argv[]) {
+
+    //CHECK ARGUMENTS_________________________________________________________________________________________
+    
     if (argc != 2) {
-        perror("too many arguments");
+        perror("too many arguments or not enough arguments");
         exit(-1);
     }
     buffer[strlen(argv[1])];
@@ -88,8 +131,19 @@ int main(int argc, char *argv[]) {
             exit(-1);
         }
     }
-    //printf("I will create %d children\n", j-1);
+
+    //___________________________________________________________________________________________________________
+
     forker(j-1);
-    //printf("w = %d, pid = %d\n", w, pidtable[w]);
+
+    for (int i = 0; i < j-1; i++) {
+      kill(pidtable[i], SIGUSR1);
+      sleep(1);
+    }
+
+    for (int i = 0; i < j-1; i++) {
+      wait(NULL);
+    }
+
     return 0;
 }

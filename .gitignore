@@ -24,3 +24,9 @@ child
 clock_example
 clock_example.c
 parent
+.vscode/settings.json
+children_wait_example.c
+example_wait
+example_wait.c
+gates_ver2
+gates_ver2.c
