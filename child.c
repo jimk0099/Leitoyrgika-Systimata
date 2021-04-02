@@ -16,14 +16,14 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <stdbool.h>
+#include <time.h>
 
-char x[100];
+char x1[10], x2[10];
 int seconds = 0;
+time_t t, live, start_timer;
 
-void handle_alarm_open() {
-  printf(GREEN "[ID=%s/PID=%d/TIME=%ds] The gates are open!\n", x, getpid(), seconds);
-}
-
+/*
 void message_open() {
   //printf(RED "[ID=%s/PID=%d/TIME=%ds] The gates are closed!\n", x, getpid(), seconds);
   for (seconds; seconds < 100; seconds++) {
@@ -43,19 +43,43 @@ void message_closed() {
     }
   }
 }
+*/
 
-int main(int argc, char **argv) {
-  strcpy(x, argv[1]);
-
-  if (strcmp(argv[2],"t") == 0) {
-    signal(SIGUSR1, message_open);
-    sleep(10);
-    //exit(0);
+void handle_child() {
+  t = time(NULL);
+  live = t - start_timer;
+  if (strcmp(x2,"t") == 0) {
+    printf(GREEN "[ID=%s/PID=%d/TIME=%lds] The gates are open!\n", x1, getpid(), live);
   }
   else {
-    signal(SIGUSR1, message_closed);
-    sleep(10);
-    //exit(0);
+    printf(RED "[ID=%s/PID=%d/TIME=%lds] The gates are closed!\n", x1, getpid(), live);
   }
+  signal(SIGALRM, handle_child);
+  alarm(15);
+}
+
+int main(int argc, char **argv) {
+
+  strcpy(x1, argv[1]);
+  strcpy(x2, argv[2]);
+  sleep(5);
+
+  start_timer = time(NULL);
+  live = 0;
+
+  if (strcmp(x2,"t") == 0) {
+    printf(GREEN "[ID=%s/PID=%d/TIME=%lds] The gates are open!\n", x1, getpid(), live);
+  }
+  else {
+    printf(RED "[ID=%s/PID=%d/TIME=%lds] The gates are closed!\n", x1, getpid(), live);
+  }
+
+  signal(SIGALRM, handle_child);
+  alarm(15);
+
+  while (1) {
+    pause();
+  }
+
   return 0;
 } 

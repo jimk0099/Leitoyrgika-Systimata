@@ -136,6 +136,7 @@ int main(int argc, char *argv[]) {
 
     forker(j-1);
 
+    /*
     for (int i = 0; i < j-1; i++) {
       kill(pidtable[i], SIGUSR1);
       sleep(1);
@@ -144,6 +145,11 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < j-1; i++) {
       wait(NULL);
     }
+    */
+  
+  while (1) {
+    pause();
+  }
     
     return 0;
 }
