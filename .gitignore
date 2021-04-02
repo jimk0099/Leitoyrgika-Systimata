@@ -33,3 +33,7 @@ child_kalathas.c
 child_kalathas
 kalathas_gates
 kalathas_gates.c
+cv_handle
+cv_handle.c
+handle_example.c
+handle_example

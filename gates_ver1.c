@@ -99,13 +99,13 @@ void forker(int nprocesses) {
               gate_state[w] = false;
             }
 
-            sleep(1);
+            usleep(50000);
 
             if (gate_state[w]) {
               printf(MAGENTA "[PARENT/PID=%d] Created child %d (PID=%d) and initial state 't'\n", getpid(), w, pidtable[w]);
             }
             else {
-            printf(MAGENTA "[PARENT/PID=%d] Created child %d (PID=%d) and initial state 'f'\n", getpid(), w, pidtable[w]);
+              printf(MAGENTA "[PARENT/PID=%d] Created child %d (PID=%d) and initial state 'f'\n", getpid(), w, pidtable[w]);
             }
 
             w++;
