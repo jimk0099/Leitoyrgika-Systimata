@@ -46,6 +46,7 @@ void message_closed() {
 }
 */
 
+
 void handle_child() {
   t = time(NULL);
   live = t - start_timer;
@@ -59,6 +60,7 @@ void handle_child() {
   alarm(15);
 }
 
+/*
 void handle_sigusr1(int sig) {
   t = time(NULL);
   live = t - start_timer;
@@ -86,6 +88,36 @@ void handle_sigusr2(int sig) {
     fflush(stdout);
   }
 }
+*/
+
+void handle_sig(int sig) {
+  t = time(NULL);
+  live = t - start_timer;
+  switch(sig) {
+    case SIGUSR1:
+      if (strcmp(x2,"t") == 0) {
+        printf(GREEN "[ID=%s/PID=%d/TIME=%lds] The gates are open!\n", x1, getpid(), live);
+        fflush(stdout);
+      }
+      else {
+        printf(RED "[ID=%s/PID=%d/TIME=%lds] The gates are closed!\n", x1, getpid(), live);
+        fflush(stdout);
+      }
+      break; 
+    case SIGUSR2:
+      if (strcmp(x2, "t") == 0) {
+        strcpy(x2, "f");
+        printf(RED "[ID=%s/PID=%d/TIME=%lds] The gates are closed!\n", x1, getpid(), live);
+        fflush(stdout);
+      }
+      else {
+        strcpy(x2, "t");
+        printf(GREEN "[ID=%s/PID=%d/TIME=%lds] The gates are open!\n", x1, getpid(), live);
+        fflush(stdout);
+      }
+      break;
+  }
+}
 
 int main(int argc, char **argv) {
 
@@ -104,14 +136,10 @@ int main(int argc, char **argv) {
   }
 
   struct sigaction sa;
-  sa.sa_handler = &handle_sigusr1;
+  sa.sa_handler = &handle_sig;
   sa.sa_flags = SA_RESTART;
   sigaction(SIGUSR1, &sa, NULL);
-
-  struct sigaction sa2;
-  sa2.sa_handler = &handle_sigusr2;
-  sa2.sa_flags = SA_RESTART;
-  sigaction(SIGUSR2, &sa2, NULL); 
+  sigaction(SIGUSR2, &sa, NULL);
 
   signal(SIGALRM, handle_child);
   alarm(15);
