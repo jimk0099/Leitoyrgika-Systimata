@@ -9,6 +9,8 @@
 #include <time.h>
 #include <sys/times.h>
 #include <stdbool.h>
+#include <signal.h>
+#include <errno.h>
 
 #define DEFAULT "\033[30;1m"
 #define RED "\033[31;1m"
@@ -114,38 +116,55 @@ void forker(int nprocesses) {
     }
 }
 
+void handle_dad_signal(int sig) {
+  switch(sig) {
+    case SIGUSR1:
+      for(int i = 0; i < j; i++) {
+        kill(pidtable[i], SIGUSR1);
+        //wait(pidtable[i]);
+      }
+      break;
+  }
+}
+
 int main(int argc, char *argv[]) {
 
-    //CHECK ARGUMENTS_________________________________________________________________________________________
+  //CHECK ARGUMENTS_________________________________________________________________________________________
     
-    if (argc != 2) {
-        perror("too many arguments or not enough arguments");
-        exit(-1);
+  if (argc != 2) {
+    perror("too many arguments or not enough arguments");
+    exit(-1);
+  }
+  buffer[strlen(argv[1])];
+  j = snprintf(buffer, strlen(argv[1])+1, "%s\n", argv[1]);
+  //printf("%s\ncount = %d\n", buffer, j-1);                                                                        //prints argv string & number of children                                                      
+  for (int i = 0; buffer[i] != '\0'; i++) {
+    if ((buffer[i] == 't' || buffer[i] != 'f') && (buffer[i] != 't' || buffer[i] == 'f')) {
+      perror("wrong arguments");
+      exit(-1);
     }
-    buffer[strlen(argv[1])];
-    j = snprintf(buffer, strlen(argv[1])+1, "%s\n", argv[1]);
-    //printf("%s\ncount = %d\n", buffer, j-1);                                                                        //prints argv string & number of children                                                      
-    for (int i = 0; buffer[i] != '\0'; i++) {
-        if ((buffer[i] == 't' || buffer[i] != 'f') && (buffer[i] != 't' || buffer[i] == 'f')) {
-            perror("wrong arguments");
-            exit(-1);
-        }
-    }
+  }
 
-    //___________________________________________________________________________________________________________
+  //___________________________________________________________________________________________________________
 
-    forker(j-1);
+  forker(j-1);
 
-    /*
-    for (int i = 0; i < j-1; i++) {
-      kill(pidtable[i], SIGUSR1);
-      sleep(1);
-    }
+  struct sigaction sa;
+  sa.sa_handler = &handle_dad_signal;
+  sa.sa_flags = SA_RESTART; //what is this??
 
-    for (int i = 0; i < j-1; i++) {
-      wait(NULL);
-    }
-    */
+  if (sigaction(SIGUSR1, &sa, NULL) == -1) {
+    perror("Error: cannot handle SIGUS1"); // Should not happen
+  }
+
+  if (sigaction(SIGUSR2, &sa, NULL) == -1) {
+    perror("Error: cannot handle SIGUS2"); // Should not happen
+  }
+
+  if (sigaction(SIGTERM, &sa, NULL) == -1) {
+    perror("Error: cannot handle SIGTERM"); // Should not happen
+  }
+
   
   while (1) {
     pause();

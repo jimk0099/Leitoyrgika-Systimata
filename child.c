@@ -153,22 +153,22 @@ int main(int argc, char **argv) {
 
   struct sigaction sa;
   sa.sa_handler = &handle_sig;
-  sa.sa_flags = SA_RESTART;
+  sa.sa_flags = SA_RESTART; //what is this??
   
   if (sigaction(SIGUSR1, &sa, NULL) == -1) {
-        perror("Error: cannot handle SIGUS1"); // Should not happen
+    perror("Error: cannot handle SIGUS1"); // Should not happen
   }
 
   if (sigaction(SIGUSR2, &sa, NULL) == -1) {
-        perror("Error: cannot handle SIGUS2"); // Should not happen
+    perror("Error: cannot handle SIGUS2"); // Should not happen
   }
 
   if (sigaction(SIGTERM, &sa, NULL) == -1) {
-        perror("Error: cannot handle SIGTERM"); // Should not happen
+    perror("Error: cannot handle SIGTERM"); // Should not happen
   }
 
   if (sigaction(SIGALRM, &sa, NULL) == -1) {
-        perror("Error: cannot handle SIGALRM"); // Should not happen
+    perror("Error: cannot handle SIGALRM"); // Should not happen
   }
 
   alarm(15);
