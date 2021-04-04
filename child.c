@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
 
   strcpy(x1, argv[1]);
   strcpy(x2, argv[2]);
-  sleep(1);
+  usleep(500000);
 
   start_timer = time(NULL);
   live = 0;

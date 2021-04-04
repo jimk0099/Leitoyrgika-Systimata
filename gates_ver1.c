@@ -34,7 +34,7 @@
 #define PERMS 0644
 
 int j = 0, w = 0, wstatus;
-pid_t pidtable[100], pid2, cpid;
+pid_t pidtable[100], cpid, pid2;
 char buffer[100];
 bool gate_state[100];
 
@@ -133,14 +133,14 @@ void handle_dad_signal(int sig) {
       }
       break;
 
-
     case SIGCHLD:
+      //printf("ENTER DAD HANDLER\n");
       //pid_t cpid, pid2;
       //int wstatus;
 
-      //printf("pid2=%d, cpid=%d, wstatus=%d\n", pid2, cpid, wstatus);
+      //printf("BEFORE pid2=%d, cpid=%d, wstatus=%d\n", pid2, cpid, wstatus);
       pid2 = waitpid(cpid, &wstatus, 0);
-      //printf("pid2=%d, cpid=%d, wstatus=%d\n", pid2, cpid, wstatus);
+      //printf("AFTER pid2=%d, cpid=%d, wstatus=%d\n", pid2, cpid, wstatus);
 
       if (pid2 == -1) {
         perror("waitpid");
@@ -183,7 +183,7 @@ void handle_dad_signal(int sig) {
           }
         }
 
-        else {     
+        else {    
           if(buffer[count] == 't') {
             printf(MAGENTA "[PARENT/PID=%d] Created new child for gate %d (PID=%d) and initial state 't'\n", getpid(), count, cpid);
             fflush(stdout);         
@@ -193,6 +193,8 @@ void handle_dad_signal(int sig) {
             fflush(stdout);  
           } 
         }
+        pidtable[count] = cpid;
+        cpid = wstatus = pid2 = 0;
       }
       break;
   }
@@ -239,25 +241,7 @@ int main(int argc, char *argv[]) {
   if (sigaction(SIGCHLD, &sa, NULL) == -1) {
     perror("Error: cannot handle SIGCHLD"); // Should not happen
   }
-
-/*
-  do {
-    pid2 = waitpid(cpid, &wstatus, WUNTRACED | WCONTINUED);
-    printf("CHILDS PID %d\n", cpid);
-    if (pid2 == -1) {
-      perror("waitpid");
-      exit(EXIT_FAILURE);
-    }
-
-    if (WIFSTOPPED(wstatus)) {
-      printf(MAGENTA "stopped by signal %d\n", WSTOPSIG(wstatus));
-    } 
-    else if (WIFSIGNALED(wstatus)) {
-      printf(MAGENTA "killed by signal %d\n", WTERMSIG(wstatus));
-    }
-  } while (!WIFEXITED(wstatus) && !WIFSIGNALED(wstatus));
-*/
-
+ 
   while (1) {
     pause();
   }
