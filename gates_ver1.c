@@ -36,7 +36,7 @@
 int j = 0, w = 0, wstatus;
 pid_t pidtable[100], cpid, pid2;
 char buffer[100];
-bool gate_state[100];
+bool gate_state[100], father_order = false;
 
 void check_neg(int ret, const char *msg) {
   if (ret < 0) {
@@ -62,7 +62,7 @@ void describe_wait_status(pid_t pid, int status) {
     printf("Child with PID %d exited with status code %d\n", pid,
            WEXITSTATUS(status));
   } else if (WIFSIGNALED(status)) {
-    printf("Child with PID %d terminated by signal %d with status code %d\n",
+    printf("Child with PID %d terminated by signal %d with status code %d!\n",
            pid, WSTOPSIG(status), WEXITSTATUS(status));
   }
 }
@@ -134,72 +134,83 @@ void handle_dad_signal(int sig) {
       break;
 
     case SIGCHLD:
-      //printf("ENTER DAD HANDLER\n");
-      //pid_t cpid, pid2;
-      //int wstatus;
+      if(father_order == false) {
+        //printf("ENTER DAD HANDLER\n");
+        //pid_t cpid, pid2;
+        //int wstatus;
 
-      //printf("BEFORE pid2=%d, cpid=%d, wstatus=%d\n", pid2, cpid, wstatus);
-      pid2 = waitpid(cpid, &wstatus, WUNTRACED | WCONTINUED);           //0
-      //printf("AFTER pid2=%d, cpid=%d, wstatus=%d\n", pid2, cpid, wstatus);
+        //printf("BEFORE pid2=%d, cpid=%d, wstatus=%d\n", pid2, cpid, wstatus);
+        pid2 = waitpid(cpid, &wstatus, WUNTRACED | WCONTINUED);           //0
+        //printf("AFTER pid2=%d, cpid=%d, wstatus=%d\n", pid2, cpid, wstatus);
 
-      if (pid2 == -1) {
-        perror("waitpid");
-        exit(EXIT_FAILURE);
+        if (pid2 == -1) {
+          perror("waitpid");
+          exit(EXIT_FAILURE);
+        }
+
+        if (WIFSTOPPED(wstatus)) {                                 //CHILD STOPPED
+          printf(MAGENTA "Child %d tried to stop but father caught it\n", pid2);
+          kill(pid2, SIGCONT);
+        }
+
+        if (WIFEXITED(wstatus)) {                                 //CHILD IS TERMINATED
+          int count = 0;
+          bool check = true;
+          while(check) {
+            if(pidtable[count] != pid2) {
+              count++;
+            }
+            else {
+              check = false;
+            }
+          }
+          printf(MAGENTA "[PARENT/PID=%d] Child %d with PID=%d exited\n", getpid(), count, pid2);
+        
+          //CREATE NEW CHILD
+          cpid = fork();
+
+          if ((cpid) < 0) {
+            perror("fork");
+            exit(-1);
+          }
+
+          else if (cpid == 0) {
+            char str[3];
+            sprintf(str, "%d", count);
+            if(buffer[count] == 't') {
+              char *const argv[] = {"./child", str, "t", NULL};
+              int status = execv("./child", argv);
+              check_neg(status, "Failed to create child");
+            }
+            else {
+              char *const argv[] = {"./child", str, "f", NULL};
+              int status = execv("./child", argv);
+              check_neg(status, "Failed to create child");
+            }
+          }
+
+          else {    
+            if(buffer[count] == 't') {
+              printf(MAGENTA "[PARENT/PID=%d] Created new child for gate %d (PID=%d) and initial state 't'\n", getpid(), count, cpid);
+              fflush(stdout);         
+            }
+            else {
+              printf(MAGENTA "[PARENT/PID=%d] Created new child for gate %d (PID=%d) and initial state 'f'\n", getpid(), count, cpid);
+              fflush(stdout);  
+            } 
+          }
+          pidtable[count] = cpid;
+          cpid = wstatus = pid2 = 0;
+        }
       }
+      break;
 
-      if (WIFSTOPPED(wstatus)) {                                 //CHILD STOPPED
-        printf(MAGENTA "Child %d tried to stop but father caught it\n", pid2);
-        kill(pid2, SIGCONT);
-      }
-
-      if (WIFEXITED(wstatus)) {                                 //CHILD IS TERMINATED
-        int count = 0;
-        bool check = true;
-        while(check) {
-          if(pidtable[count] != pid2) {
-            count++;
-          }
-          else {
-            check = false;
-          }
-        }
-        printf(MAGENTA "[PARENT/PID=%d] Child %d with PID=%d exited\n", getpid(), count, pid2);
-      
-        //CREATE NEW CHILD
-        cpid = fork();
-
-        if ((cpid) < 0) {
-          perror("fork");
-          exit(-1);
-        }
-
-        else if (cpid == 0) {
-          char str[3];
-          sprintf(str, "%d", count);
-          if(buffer[count] == 't') {
-            char *const argv[] = {"./child", str, "t", NULL};
-            int status = execv("./child", argv);
-            check_neg(status, "Failed to create child");
-          }
-          else {
-            char *const argv[] = {"./child", str, "f", NULL};
-            int status = execv("./child", argv);
-            check_neg(status, "Failed to create child");
-          }
-        }
-
-        else {    
-          if(buffer[count] == 't') {
-            printf(MAGENTA "[PARENT/PID=%d] Created new child for gate %d (PID=%d) and initial state 't'\n", getpid(), count, cpid);
-            fflush(stdout);         
-          }
-          else {
-            printf(MAGENTA "[PARENT/PID=%d] Created new child for gate %d (PID=%d) and initial state 'f'\n", getpid(), count, cpid);
-            fflush(stdout);  
-          } 
-        }
-        pidtable[count] = cpid;
-        cpid = wstatus = pid2 = 0;
+    case SIGTERM:
+      father_order = true;
+      int w1 = w;
+      for(int i = 0; i < w; i++) {
+        usleep(50000);
+        kill(pidtable[i], SIGTERM);
       }
       break;
   }
@@ -248,6 +259,15 @@ int main(int argc, char *argv[]) {
   }
  
   while (1) {
+    if(father_order == true) {
+      for(int i = 0; i < w; i++) {
+        int status;
+        pid2 = waitpid(pidtable[i], &status, 0);
+        printf(WHITE "[PARENT/PID=%d] Waiting for %d children to exit\n", getpid(), w-i);
+        describe_wait_status(pid2, status);
+      }
+      printf(WHITE "All children exited, terminating as well\n");
+    }
     pause();
   }
     
