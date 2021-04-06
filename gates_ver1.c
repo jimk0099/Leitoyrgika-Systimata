@@ -1,3 +1,9 @@
+/*
+2h ergastiriaki askisi sta leitoyrgika systimata
+Dimitrios Kalathas el18016
+Dimitrios Kalemis el18152
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

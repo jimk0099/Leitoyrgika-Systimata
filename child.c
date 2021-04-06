@@ -1,10 +1,8 @@
-/**
- * kill -SIGUSR1 
- * \file child.c
- * \author Aggelos Kolaitis <neoaggelos@gmail.com>
- * \date 2021-03-26
- * \brief execv() example, child process.
- */
+/*
+2h ergastiriaki askisi sta leitoyrgika systimata
+Dimitrios Kalathas el18016
+Dimitrios Kalemis el18152
+*/
 
 #define RED "\033[31m"
 #define GREEN "\033[32m"
